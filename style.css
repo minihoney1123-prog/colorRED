@@ -1,0 +1,261 @@
+/* --- 1. [핵심] 전체 스크롤 스냅 설정 (강력한 자석 효과) --- */
+html, body {
+    margin: 0; padding: 0;
+    width: 100%;
+    height: 100%;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background-color: #fff;
+
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+}
+
+/* --- 메인 동그라미 (주인공) --- */
+#scroll-dot {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    width: 40px; height: 40px;
+    background-color: #d32f2f;
+    border-radius: 50%;
+    z-index: 9999;
+    pointer-events: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    transition:
+        width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+        height 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+        transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+        background-color 0.3s,
+        border-radius 0.3s,
+        opacity 0.2s,
+        top 0.4s ease-out,
+        left 0.4s ease-out,
+        border 0.2s;
+}
+
+.inner-icon {
+    font-size: 0;
+    opacity: 0;
+    color: #d32f2f;
+    transition: opacity 0.3s, font-size 0.3s;
+}
+
+/* --- 2. 각 스크롤 섹션 기본 설정 --- */
+.scroll-section {
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    box-sizing: border-box;
+    overflow: hidden;
+
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+}
+
+.icon-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4rem;
+}
+.column-group { flex-direction: column; gap: 2rem; }
+.row-group { flex-direction: row; }
+
+/* --- 1. Header --- */
+#main-header {
+    height: 100vh;
+    background-color: #d32f2f;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+}
+.header-content h1 { font-size: 8vw; margin: 0; line-height: 1.1; font-weight: 900; }
+.header-content p { font-size: 1.5rem; letter-spacing: 5px; margin-top: 20px; }
+
+
+/* 이미지 두 장을 담는 wrapper */
+.stop-image-wrapper {
+    position: relative;
+    width: 80vw;
+    max-width: 800px;
+    min-height: 300px; /* wrapper 붕괴 방지 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 공통 속성: 트랜지션과 초기 위치 설정 */
+.stop-image {
+    width: 100%;
+    height: auto;
+    
+    /* 등장 효과: 왼쪽에서 슬라이드 */
+    transform: translateX(-150%);
+    /* transform(위치/크기)과 opacity(투명도) 트랜지션 분리 설정 */
+    transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), /* 텐션감 있는 베지어 곡선 */
+                opacity 0.4s ease-out;
+}
+
+/* 1. Default Image: 공간을 차지해야 하므로 relative 유지 */
+/* 중요: !important를 쓰거나 CSS 순서를 잘 지켜서 absolute가 되지 않도록 함 */
+.default-image {
+    position: relative; 
+    z-index: 1;
+    opacity: 1;
+}
+
+/* 2. Active Image: Default 위에 겹쳐야 하므로 absolute */
+.active-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    opacity: 0;
+    
+    /* 평소에는 기본 크기 */
+    transform-origin: center center;
+}
+
+/* 3. 섹션 등장 시: 슬라이드 인 (원래 위치로) */
+.stop-image-wrapper.active .stop-image {
+    transform: translateX(0);
+}
+
+/* 4. 도달(Reached) 시: Active 이미지 보이기 + "확대 효과(Pop)" */
+.stop-image-wrapper.is-reached .default-image {
+    opacity: 0;
+}
+
+.stop-image-wrapper.is-reached .active-image {
+    opacity: 1;
+    /* 여기서 translateX(0)을 유지하면서 scale을 추가해야 함 */
+    transform: translateX(0) scale(1.1); 
+}
+.important-section {
+    background-color: white;
+    flex-direction: column;
+    text-align: center;
+    white-space: nowrap;
+}
+.text-wall { display: flex; flex-direction: column; gap: 1rem; align-items: center; }
+.text-wall p { margin: 0; font-size: 3rem; font-weight: 900; color: #000; transition: opacity 0.5s ease; }
+.focus-word { display: inline-block; position: relative; z-index: 5; }
+.important-section.is-focused .fade-target { opacity: 0.1; }
+.important-section.is-focused .focus-word { opacity: 1; }
+
+/* HEART */
+.person-icon { font-size: 12rem; }
+.heart-wrapper { width: 140px; height: 140px; display: flex; justify-content: center; align-items: center; }
+
+/* OK */
+.check-icon { font-size: 8rem; color: #d32f2f; }
+.text-big { font-size: 12rem; font-weight: 900; display: flex; align-items: center; line-height: 1; }
+.ok-position { display: inline-block; width: 110px; height: 110px; border: 15px solid #000; border-radius: 50%; margin-right: 10px; }
+
+/* ON */
+.on-position { display: inline-block; width: 110px; height: 110px; background: #d32f2f; border-radius: 50%; margin-right: 20px; opacity: 0.3; }
+.toggle-icon { font-size: 8rem; margin-top: 20px; }
+
+/* TAP */
+.tap-group { position: relative; margin-top: -50px; }
+.tap-icon { font-size: 16rem; }
+.tap-position { position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; }
+.drop-icon { position: absolute; bottom: -80px; left: 50%; transform: translateX(-50%); font-size: 5rem; color: #000; }
+
+/* REC */
+.rec-box { border: 10px solid #000; border-radius: 20px; padding: 20px 60px; display: flex; align-items: center; font-size: 6rem; font-weight: 900; }
+.rec-position { display: inline-block; width: 50px; height: 50px; background: #d32f2f; border-radius: 50%; margin-right: 30px; opacity: 0.2; }
+
+/* CHAT */
+.chat-bubble { position: relative; font-size: 14rem; }
+.chat-badge-position { position: absolute; top: 10px; right: 10px; width: 50px; height: 50px; }
+
+/* PLAYER */
+.player-controls { display: flex; gap: 80px; font-size: 8rem; align-items: center; }
+.stop-btn-placeholder { width: 90px; height: 90px; background: #eee; border-radius: 5px; }
+
+/* EXCLAMATION */
+.exclamation-group { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+.exclamation-bar { width: 50px; height: 200px; background: #d32f2f; }
+.exclamation-dot-position { width: 50px; height: 50px; background: #eee; border-radius: 50%; }
+
+/* END */
+.end-section { background-color: #d32f2f; height: 100vh; flex-direction: column; overflow: hidden; }
+.snowman-group { display: flex; flex-direction: column; align-items: center; z-index: 10; transform: scale(1.5); }
+.snowman-head-position { width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; margin-bottom: -8px; }
+.snowman-body { width: 100px; height: 100px; background: white; border-radius: 50%; }
+
+.snow-flakes-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+.snow-dot { position: absolute; top: -30px; width: 15px; height: 15px; background-color: white; border-radius: 50%; opacity: 0.8; animation: fall linear infinite; }
+@keyframes fall {
+    0% { transform: translateY(0); opacity: 0; }
+    10% { opacity: 0.9; }
+    100% { transform: translateY(110vh); opacity: 0; }
+}
+
+/* --- 도착 효과 (Dot) --- */
+.dot.is-important-text {
+    background-color: transparent !important;
+    border: 8px solid #d32f2f !important;
+    width: 320px !important; height: 100px !important;
+    border-radius: 100px !important;
+    transform: translate(-50%, -50%) scale(1.1) !important;
+}
+
+.dot.is-heart {
+    background-color: transparent !important;
+    transform: translate(-50%, -50%) scale(1.3) !important;
+}
+.dot.is-heart .inner-icon { opacity: 1; font-size: 10rem; }
+
+.dot.is-square {
+    border-radius: 10px !important;
+    width: 90px !important; height: 90px !important;
+    transform: translate(-50%, -50%) scale(1.2) !important;
+}
+
+.dot.is-white {
+    background-color: white !important;
+    width: 60px !important; height: 60px !important;
+    transform: translate(-50%, -50%) scale(1.2) !important;
+}
+
+.dot.is-ok {
+    width: 110px !important; height: 110px !important;
+    transform: translate(-50%, -50%) scale(1.1) !important;
+}
+
+.dot.is-rec {
+    width: 50px !important; height: 50px !important;
+    animation: blink 0.8s infinite;
+    transform: translate(-50%, -50%) scale(1.3) !important;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+.dot.is-badge {
+    width: 50px !important; height: 50px !important;
+    border: 5px solid white;
+    transform: translate(-50%, -50%) scale(1.4) !important;
+}
+
+.dot.is-tap {
+    width: 40px !important; height: 40px !important;
+    transform: translate(-50%, -50%) scale(1.2) !important;
+}
+
+.dot.is-exclamation {
+    width: 50px !important; height: 50px !important;
+    transform: translate(-50%, -50%) scale(1.2) !important;
+}

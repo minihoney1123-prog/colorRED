@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Scroll Story</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* --- 1. 전체 레이아웃 및 스크롤 스냅 --- */
+        html, body {
+            margin: 0; padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #fff;
+            
+            /* 스크롤 스냅 설정 */
+            overflow-y: scroll; 
+            scroll-snap-type: y mandatory; /* 강제 스냅 */
+            scroll-behavior: smooth;
+        }
+
+        /* --- 2. 메인 동그라미 (주인공) --- */
+        #scroll-dot {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(1);
+            width: 40px; height: 40px;
+            background-color: #d32f2f;
+            border-radius: 50%;
+            z-index: 9999;
+            pointer-events: none; /* 중요: 마우스 이벤트를 가리지 않음 */
+            
+            /* 초기 상태: 안 보임 */
+            opacity: 0;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            
+            /* 애니메이션 트랜지션 */
+            transition: 
+                width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                height 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                background-color 0.3s, 
+                border-radius 0.3s, 
+                opacity 0.2s ease-in-out, 
+                top 0.4s ease-out, 
+                left 0.4s ease-out,
+                border 0.2s;
+        }
+
+        .inner-icon {
+            font-size: 0;
+            opacity: 0;
+            color: #d32f2f;
+            transition: opacity 0.3s, font-size 0.3s;
+        }
+
+        /* --- 3. 섹션 공통 스타일 --- */
+        .scroll-section {
+            height: 100vh;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            box-sizing: border-box;
+            overflow: hidden; 
+
+            /* 섹션별 스냅 위치 */
+            scroll-snap-align: start;
+            scroll-snap-stop: always; 
+        }
+
+        .icon-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4rem; 
+            color: #000;
+        }
+        .column-group { flex-direction: column; gap: 2rem; }
+        .row-group { flex-direction: row; }
+
+        /* --- 4. 개별 섹션 스타일 --- */
+
+        /* Header */
+        #main-header {
+            height: 100vh;
+            background-color: #d32f2f;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+        }
+        .header-content h1 { font-size: 8vw; margin: 0; line-height: 1.1; font-weight: 900; }
+        .header-content p { font-size: 1.5rem; letter-spacing: 5px; margin-top: 20px;}
+        
+
+        /* STOP Section (자동차) */
+        .stop-image-wrapper {
+            position: relative;
+            width: 80vw;
+            max-width: 800px;
+            height: auto;
+            min-height: 300px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .stop-image {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            height: auto;
+            /* 초기 상태: 왼쪽 화면 밖 */
+            transform: translateX(-150%);
+            transition: transform 1s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.5s;
+        }
+        
+        .default-image { z-index: 1; opacity: 1; position: relative; } /* relative로 높이 확보 */
+        .active-image { z-index: 2; opacity: 0; position: absolute; }
+
+        /* 자동차 등장 애니메이션 클래스 (JS에서 추가) */
+        .stop-image-wrapper.active .stop-image {
+            transform: translateX(0);
+        }
+
+        /* 빨간점 도달 시 이미지 교체 */
+        .stop-image-wrapper.is-reached .default-image { opacity: 0; }
+        .stop-image-wrapper.is-reached .active-image { opacity: 1; }
+
+
+        /* IMPORTANT Section */
+        .important-section {
+            background-color: white;
+            flex-direction: column;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .text-wall { display: flex; flex-direction: column; gap: 1rem; align-items: center; }
+        .text-wall p { margin: 0; font-size: 3rem; font-weight: 900; color: #000; transition: opacity 0.5s ease; }
+        .focus-word { display: inline-block; position: relative; z-index: 20; } /* 글자가 동그라미 위로 오도록 */
+        
+        .important-section.is-focused .fade-target { opacity: 0.1; }
+        .important-section.is-focused .focus-word { opacity: 1; color: #000; }
+
+        /* 기타 섹션들 스타일 */
+        .person-icon { font-size: 12rem; }
+        .heart-wrapper { width: 140px; height: 140px; display: flex; justify-content: center; align-items: center; }
+
+        .check-icon { font-size: 8rem; color: #d32f2f; }
+        .text-big { font-size: 12rem; font-weight: 900; display: flex; align-items: center; line-height: 1; }
+        .ok-position { display: inline-block; width: 110px; height: 110px; border: 15px solid #000; border-radius: 50%; margin-right: 10px; }
+
+        .on-position { display: inline-block; width: 110px; height: 110px; background: #d32f2f; border-radius: 50%; margin-right: 20px; opacity: 0.3; }
+        .toggle-icon { font-size: 8rem; margin-top: 20px; }
+
+        .tap-group { position: relative; margin-top: -50px; }
+        .tap-icon { font-size: 16rem; }
+        .tap-position { position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; }
+        .drop-icon { position: absolute; bottom: -80px; left: 50%; transform: translateX(-50%); font-size: 5rem; color: #000; }
+
+        .rec-box { border: 10px solid #000; border-radius: 20px; padding: 20px 60px; display: flex; align-items: center; font-size: 6rem; font-weight: 900; }
+        .rec-position { display: inline-block; width: 50px; height: 50px; background: #d32f2f; border-radius: 50%; margin-right: 30px; opacity: 0.2; }
+
+        .chat-bubble { position: relative; font-size: 14rem; }
+        .chat-badge-position { position: absolute; top: 10px; right: 10px; width: 50px; height: 50px; }
+
+        .player-controls { display: flex; gap: 80px; font-size: 8rem; align-items: center; }
+        .stop-btn-placeholder { width: 90px; height: 90px; background: #eee; border-radius: 5px; }
+
+        .exclamation-group { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+        .exclamation-bar { width: 50px; height: 200px; background: #d32f2f; }
+        .exclamation-dot-position { width: 50px; height: 50px; background: #eee; border-radius: 50%; }
+
+        .end-section { background-color: #d32f2f; height: 100vh; flex-direction: column; overflow: hidden; }
+        .snowman-group { display: flex; flex-direction: column; align-items: center; z-index: 10; transform: scale(1.5); }
+        .snowman-head-position { width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; margin-bottom: -8px; }
+        .snowman-body { width: 100px; height: 100px; background: white; border-radius: 50%; }
+
+        .snow-flakes-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .snow-dot { position: absolute; top: -30px; width: 15px; height: 15px; background-color: white; border-radius: 50%; opacity: 0.8; animation: fall linear infinite; }
+        @keyframes fall {
+            0% { transform: translateY(0); opacity: 0; }
+            10% { opacity: 0.9; }
+            100% { transform: translateY(110vh); opacity: 0; }
+        }
+
+
+        /* --- 5. DOT 변신 스타일 (도착 시) --- */
+        
+        /* 1. Important 텍스트 강조 (테두리만) */
+        .dot.is-important-text {
+            background-color: transparent !important;
+            border: 8px solid #d32f2f !important;
+            width: 320px !important; height: 100px !important;
+            border-radius: 100px !important;
+            z-index: 10; /* 글자(20)보다는 아래 */
+            transform: translate(-50%, -50%) scale(1.1) !important;
+        }
+
+        /* 2. 하트 */
+        .dot.is-heart {
+            background-color: transparent !important; box-shadow: none;
+            transform: translate(-50%, -50%) scale(1.3) !important;
+        }
+        .dot.is-heart .inner-icon { opacity: 1; font-size: 10rem; }
+
+        /* 3. 네모 */
+        .dot.is-square {
+            border-radius: 10px !important; width: 90px !important; height: 90px !important;
+            transform: translate(-50%, -50%) scale(1.2) !important;
+        }
+
+        /* 4. 흰색 (눈사람) */
+        .dot.is-white {
+            background-color: white !important; width: 60px !important; height: 60px !important;
+            transform: translate(-50%, -50%) scale(1.2) !important;
+        }
+
+        /* 5. OK */
+        .dot.is-ok { 
+            width: 110px !important; height: 110px !important; 
+            transform: translate(-50%, -50%) scale(1.1) !important;
+        }
+
+        /* 6. REC */
+        .dot.is-rec {
+            width: 50px !important; height: 50px !important; animation: blink 0.8s infinite;
+            transform: translate(-50%, -50%) scale(1.3) !important;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* 7. 배지 */
+        .dot.is-badge {
+            width: 50px !important; height: 50px !important; border: 5px solid white;
+            transform: translate(-50%, -50%) scale(1.4) !important;
+        }
+
+        /* 8. 수도꼭지 */
+        .dot.is-tap { 
+            width: 40px !important; height: 40px !important; 
+            transform: translate(-50%, -50%) scale(1.2) !important;
+        }
+
+        /* 9. 느낌표 */
+        .dot.is-exclamation { 
+            width: 50px !important; height: 50px !important; 
+            transform: translate(-50%, -50%) scale(1.2) !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="scroll-dot">
+        <i class="fas fa-heart inner-icon heart-icon"></i>
+    </div>
+
+    <section id="main-header">
+        <div class="header-content">
+            <h1>color<br>RED</h1>
+        </div>
+    </section>
+
+    <div class="content-wrapper" id="main-content">
+        
+        <section class="scroll-section" id="section-stop">
+            <div class="icon-group">
+                <div class="stop-image-wrapper">
+    <svg class="stop-image default-image" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 163.7 163.7">
+        <g>
+            <circle cx="81.85" cy="81.85" r="81.85" fill="#db2a2a"/>
+            
+            <text transform="translate(26.72 99.16)" fill="#fff" font-family="Pretendard, sans-serif" font-size="53.52" font-weight="600">
+                <tspan x="0" y="0">s</tspan>
+                <tspan x="28.07" y="0" letter-spacing="0em">t</tspan>
+                <tspan x="47.07" y="0">op</tspan>
+            </text>
+            
+            <circle cx="81.85" cy="81.85" r="70.45" fill="none" stroke="#fff" stroke-width="4" stroke-miterlimit="10"/>
+        </g>
+    </svg>
+    
+    </div>
+            </div>
+        </section>
+
+        <section class="scroll-section important-section" id="section-important">
+            <div class="text-wall">
+                <p class="fade-target">you know what? this is really important this is really important</p>
+                <p class="fade-target">you know what? this is really important this is really important</p>
+                
+                <p class="main-line">
+                    <span class="fade-target">you know what? this is really </span>
+                    <span class="focus-word dot-target" data-target-id="important-text">important</span>
+                    <span class="fade-target"> this is really...</span>
+                </p>
+
+                <p class="fade-target">you know what? this is really important this is really important</p>
+                <p class="fade-target">you know what? this is really important this is really important</p>
+            </div>
+        </section>
+
+        <section class="scroll-section" id="section-heart">
+            <div class="icon-group">
+                <i class="fas fa-person person-icon"></i>
+                <div class="heart-wrapper dot-target" data-target-id="heart"></div>
+                <i class="fas fa-person person-icon"></i>
+            </div>
+        </section>
+
+        <section class="scroll-section" id="section-ok">
+            <div class="icon-group column-group">
+                <i class="fas fa-check check-icon"></i>
+                <div class="text-big">
+                    <span class="dot-target ok-position" data-target-id="ok"></span>K
+                </div>
+            </div>
+        </section>
+        
+        <section class="scroll-section" id="section-on">
+            <div class="icon-group column-group">
+                <div class="text-big">
+                    <span class="dot-target on-position" data-target-id="on"></span>N
+                </div>
+                <i class="fas fa-toggle-on toggle-icon"></i>
+            </div>
+        </section>
+
+        <section class="scroll-section" id="section-tap">
+            <div class="icon-group tap-group">
+                <i class="fas fa-faucet tap-icon"></i>
+                <div class="dot-target tap-position" data-target-id="tap"></div>
+                <i class="fas fa-tint drop-icon"></i>
+            </div>
+        </section>
+        
+         <section class="scroll-section" id="section-rec">
+             <div class="icon-group row-group">
+                <div class="rec-box">
+                    <span class="dot-target rec-position" data-target-id="rec"></span>
+                    <span class="text-rec">REC</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="scroll-section" id="section-chat">
+            <div class="icon-group">
+                <div class="chat-bubble">
+                    <i class="fas fa-comment-dots"></i>
+                    <div class="dot-target chat-badge-position" data-target-id="chat"></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="scroll-section" id="section-player">
+            <div class="icon-group player-controls">
+                <i class="fas fa-pause"></i>
+                <div class="stop-btn-placeholder dot-target" data-target-id="player"></div>
+                <i class="fas fa-play"></i>
+            </div>
+        </section>
+
+        <section class="scroll-section" id="section-exclamation">
+            <div class="icon-group exclamation-group">
+                <div class="exclamation-bar"></div>
+                <div class="dot-target exclamation-dot-position" data-target-id="exclamation"></div>
+            </div>
+        </section>
+
+        <section class="scroll-section end-section" id="section-end">
+            <div class="snowman-group">
+                <div class="dot-target snowman-head-position" data-target-id="snowman"></div>
+                <div class="snowman-body"></div>
+            </div>
+            
+            <div class="snow-flakes-container">
+                <div class="snow-dot" style="left: 10%; animation-delay: 0s; animation-duration: 5s;"></div>
+                <div class="snow-dot" style="left: 20%; animation-delay: 2s; animation-duration: 7s; width: 10px; height: 10px;"></div>
+                <div class="snow-dot" style="left: 35%; animation-delay: 1s; animation-duration: 4s;"></div>
+                <div class="snow-dot" style="left: 50%; animation-delay: 3s; animation-duration: 6s; width: 20px; height: 20px;"></div>
+                <div class="snow-dot" style="left: 65%; animation-delay: 0.5s; animation-duration: 4.5s;"></div>
+                <div class="snow-dot" style="left: 80%; animation-delay: 4s; animation-duration: 5.5s; width: 8px; height: 8px;"></div>
+                <div class="snow-dot" style="left: 95%; animation-delay: 1.5s; animation-duration: 6.5s;"></div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const scrollDot = document.getElementById('scroll-dot');
+            const dotTargets = document.querySelectorAll('.dot-target');
+            const importantSection = document.getElementById('section-important');
+            const stopWrapper = document.querySelector('.stop-image-wrapper');
+
+            let targetPositions = [];
+
+            // 1. 타겟 위치 계산 (화면 리사이즈 시 재계산)
+            const updateLayout = () => {
+                targetPositions = [];
+                // 문서 전체에서의 스크롤 위치
+                const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+
+                dotTargets.forEach(target => {
+                    const rect = target.getBoundingClientRect();
+                    // 타겟의 절대 좌표 계산
+                    const absoluteY = rect.top + scrollY + rect.height / 2;
+                    const absoluteX = rect.left + window.scrollX + rect.width / 2;
+
+                    targetPositions.push({
+                        id: target.dataset.targetId,
+                        x: absoluteX,
+                        y: absoluteY,
+                        element: target 
+                    });
+                });
+                
+                // Y좌표 순으로 정렬
+                targetPositions.sort((a, b) => a.y - b.y);
+            };
+
+            // 2. 동그라미 스타일 업데이트 함수
+            const updateDotStyle = (id) => {
+                scrollDot.className = ''; 
+                scrollDot.id = 'scroll-dot'; 
+                scrollDot.style.border = ''; 
+
+                switch (id) {
+                    case 'important-text': 
+                        scrollDot.classList.add('dot', 'is-important-text');
+                        break;
+                    case 'heart':
+                        scrollDot.classList.add('dot', 'is-heart');
+                        break;
+                    case 'ok':
+                        scrollDot.classList.add('dot', 'is-ok');
+                        break;
+                    case 'tap':
+                        scrollDot.classList.add('dot', 'is-tap');
+                        break;
+                    case 'rec':
+                        scrollDot.classList.add('dot', 'is-rec');
+                        break;
+                    case 'chat':
+                        scrollDot.classList.add('dot', 'is-badge');
+                        break;
+                    case 'player':
+                        scrollDot.classList.add('dot', 'is-square');
+                        break;
+                    case 'snowman':
+                        scrollDot.classList.add('dot', 'is-white');
+                        break;
+                    case 'exclamation':
+                        scrollDot.classList.add('dot', 'is-exclamation');
+                        break;
+                    default: 
+                        scrollDot.classList.add('dot');
+                        break;
+                }
+            };
+
+            // 3. 메인 스크롤 핸들러
+            const handleScroll = () => {
+                const scrollY = window.scrollY;
+                const viewportHeight = window.innerHeight;
+                // 현재 화면의 정중앙 좌표
+                const viewportCenterY = scrollY + (viewportHeight / 2);
+
+                // --- [Fix] 자동차 등장 애니메이션 로직 복구 ---
+                if (stopWrapper) {
+                    // 자동차 섹션의 위치
+                    const wrapperTop = stopWrapper.closest('section').offsetTop;
+                    // 화면 하단이 섹션 상단에 닿으면 active 추가
+                    if (scrollY + viewportHeight > wrapperTop + 200) {
+                        stopWrapper.classList.add('active');
+                    }
+                }
+                
+                // --- [Fix] 메인 화면에서 점 숨기기 ---
+                // 타겟이 없거나, 첫 번째 타겟(자동차)보다 훨씬 위에 있으면 숨김
+                if (targetPositions.length === 0 || viewportCenterY < targetPositions[0].y - viewportHeight * 0.4) {
+                    scrollDot.style.opacity = '0';
+                    return; // 여기서 함수 종료하여 아래 로직 실행 안 함
+                } else {
+                    scrollDot.style.opacity = '1';
+                }
+
+                // --- [Fix] 현재 활성 타겟 찾기 (가장 가까운 타겟) ---
+                // 스크롤 스냅을 쓰므로, 화면 중앙과 가장 가까운 타겟을 찾는 것이 더 정확함
+                let closestTarget = null;
+                let minDiff = Infinity;
+
+                targetPositions.forEach(pos => {
+                    const diff = Math.abs(viewportCenterY - pos.y);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closestTarget = pos;
+                    }
+                });
+
+                // 이동 보간 로직 (부드러운 이동)
+                // 현재 구간 찾기
+                let currentIdx = 0;
+                for (let i = 0; i < targetPositions.length - 1; i++) {
+                    if (viewportCenterY >= targetPositions[i].y) {
+                        currentIdx = i;
+                    }
+                }
+                
+                const currentTarget = targetPositions[currentIdx];
+                const nextTarget = targetPositions[currentIdx + 1];
+
+                let finalX = currentTarget.x;
+                let finalY = currentTarget.y;
+
+                if (nextTarget) {
+                    const distTotal = nextTarget.y - currentTarget.y;
+                    const distCovered = viewportCenterY - currentTarget.y;
+                    let progress = distCovered / distTotal;
+                    
+                    // 범위 제한
+                    progress = Math.max(0, Math.min(1, progress));
+
+                    finalX = currentTarget.x + (nextTarget.x - currentTarget.x) * progress;
+                    finalY = currentTarget.y + (nextTarget.y - currentTarget.y) * progress;
+                }
+
+                // 동그라미 위치 적용
+                scrollDot.style.left = `${finalX - window.scrollX}px`;
+                scrollDot.style.top = `${finalY - window.scrollY}px`;
+
+                // --- 스타일 적용 (가장 가까운 타겟 기준) ---
+                if (closestTarget) {
+                    updateDotStyle(closestTarget.id);
+
+                    // Important 텍스트 강조 효과
+                    if (closestTarget.id === 'important-text') {
+                        importantSection.classList.add('is-focused');
+                    } else {
+                        importantSection.classList.remove('is-focused');
+                    }
+
+                    // STOP 이미지 교체 효과
+                    if (closestTarget.id === 'stop') {
+                        // 약간의 오차 범위를 주어 확실히 도착했을 때만 바뀜
+                        if (minDiff < 50 && stopWrapper) {
+                             stopWrapper.classList.add('is-reached');
+                        }
+                    } else {
+                        if (stopWrapper) stopWrapper.classList.remove('is-reached');
+                    }
+                }
+            };
+
+            // 이벤트 리스너 등록
+            window.addEventListener('scroll', handleScroll);
+            window.addEventListener('resize', () => { updateLayout(); handleScroll(); });
+            window.addEventListener('load', () => { updateLayout(); handleScroll(); });
+
+            // 초기 실행
+            updateLayout();
+            handleScroll();
+        });
+    </script>
+  </head>
+<body>
+
+    <div id="scroll-dot">
+        <i class="fas fa-heart inner-icon heart-icon"></i>
+    </div>
+
+    <section id="main-header">
+        <div class="header-content"
+            <h1>color<br>RED</h1>
+        
+        </div>
+    </section>
+
+    <div class="content-wrapper" id="main-content">
+        
+        <!-- FIXED: stop 섹션 하나로 통합 -->
+        <section class="scroll-section" id="section-stop">
+            <div class="icon-group">
+                <div class="stop-image-wrapper dot-target" data-target-id="stop">
+                    <img src="https://i.imgur.com/iF8k11p.png" alt="Car with Stop Sign" class="stop-image default-image">
+                    <img src="https://i.imgur.com/ybU96a0.png" alt="Car with Stop Sign Active" class="stop-image active-image">
+                </div>
+            </div>
+        </section>
+
+        <section class="scroll-section" id="section-heart">
+            <div class="icon-group">
+                <i class="fas fa-person person-icon"></i>
+                <div class="heart-wrapper dot-target" data-target-id="heart"></div>
+                <i class="fas fa-person person-icon"></i>
+            </div>
+        </section>
+
+        <section class="scroll-section" id="section-ok">
+            <div class="icon-group column-group">
+                <i class="fas fa-check check-icon"></i>
+                <div class="text-big">
+                    <span class="dot-target ok-position" data-target-id="ok"></span>K
+                </div>
+            </div>
+        </section>
+        
+        <section class="scroll-section" id="section-on">
+            <div class="icon-group column-group">
+                <div class="text-big">
+                    <span class="dot-target on-position" data-target-id="on"></span>N
+                </div>
+                <i class="fas fa-toggle-on toggle-icon"></i>
+            </div>
+        </section>
+
+        <section class="scroll-section" id="section-tap">
+            <div class="icon-group tap-group">
+                <i class="fas fa-faucet tap-icon"></i>
+                <div class="dot-target tap-position" data-target-id="tap"></div>
+                <i class="fas fa-tint drop-icon"></i>
+            </div>
+        </section>
+        
+        <section class="scroll-section" id="section-rec">
+            <div class="icon-group row-group">
+                <div class="rec-box">
+                    <span class="dot-target rec-position" data-target-id="rec"></span>
+                    <span class="text-rec">REC</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="scroll-section" id="section-chat">
+            <div class="icon-group">
+                <div class="chat-bubble">
+                    <i class="fas fa-comment-dots"></i>
+                    <div class="dot-target chat-badge-position" data-target-id="chat"></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="scroll-section" id="section-player">
+            <div class="icon-group player-controls">
+                <i class="fas fa-pause"></i>
+                <div class="stop-btn-placeholder dot-target" data-target-id="player"></div>
+                <i class="fas fa-play"></i>
+            </div>
+        </section>
+
+        <section class="scroll-section" id="section-exclamation">
+            <div class="icon-group exclamation-group">
+                <div class="exclamation-bar"></div>
+                <div class="dot-target exclamation-dot-position" data-target-id="exclamation"></div>
+            </div>
+        </section>
+
+        <section class="scroll-section end-section" id="section-end">
+            <div class="snowman-group">
+                <div class="dot-target snowman-head-position" data-target-id="snowman"></div>
+                <div class="snowman-body"></div>
+            </div>
+            
+            <div class="snow-flakes-container">
+                <div class="snow-dot" style="left: 10%; animation-delay: 0s; animation-duration: 5s;"></div>
+                <div class="snow-dot" style="left: 20%; animation-delay: 2s; animation-duration: 7s; width: 10px; height: 10px;"></div>
+                <div class="snow-dot" style="left: 35%; animation-delay: 1s; animation-duration: 4s;"></div>
+                <div class="snow-dot" style="left: 50%; animation-delay: 3s; animation-duration: 6s; width: 20px; height: 20px;"></div>
+                <div class="snow-dot" style="left: 65%; animation-delay: 0.5s; animation-duration: 4.5s;"></div>
+                <div class="snow-dot" style="left: 80%; animation-delay: 4s; animation-duration: 5.5s; width: 8px; height: 8px;"></div>
+                <div class="snow-dot" style="left: 95%; animation-delay: 1.5s; animation-duration: 6.5s;"></div>
+            </div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
