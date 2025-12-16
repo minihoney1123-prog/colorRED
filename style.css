@@ -1,261 +1,465 @@
-/* --- 1. [핵심] 전체 스크롤 스냅 설정 (강력한 자석 효과) --- */
+/* style.css 전체 교체 */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
 html, body {
-    margin: 0; padding: 0;
     width: 100%;
     height: 100%;
-    font-family: 'Helvetica Neue', Arial, sans-serif;
-    background-color: #fff;
-
-    overflow-y: scroll;
-    scroll-snap-type: y mandatory;
+    font-family: 'Impact', 'Arial Black', 'Noto Sans KR', sans-serif;
+    background-color: white;
+    overflow-x: hidden;
+    
+    /* ★ 핵심: 페이지가 자석처럼 딱딱 붙게 만드는 기능 ★ */
+    scroll-snap-type: y mandatory; 
     scroll-behavior: smooth;
 }
 
-/* --- 메인 동그라미 (주인공) --- */
-#scroll-dot {
-    position: fixed;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%) scale(1);
-    width: 40px; height: 40px;
-    background-color: #d32f2f;
-    border-radius: 50%;
-    z-index: 9999;
-    pointer-events: none;
+/* 모든 섹션 공통 설정 */
+section {
+    width: 100%;
+    height: 100vh; /* 화면 꽉 차게 */
+    
+    /* ★ 섹션의 시작 부분에 스크롤이 딱 멈추도록 설정 ★ */
+    scroll-snap-align: start; 
+    scroll-snap-stop: always;
+    
+    position: relative;
+    overflow: hidden; /* 내부 요소 튀어나옴 방지 */
+}
+
+/* --- [1] 메인 섹션 --- */
+.main-section {
+    background-color: #E60000;
     display: flex;
     justify-content: center;
     align-items: center;
-
-    transition:
-        width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
-        height 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
-        transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
-        background-color 0.3s,
-        border-radius 0.3s,
-        opacity 0.2s,
-        top 0.4s ease-out,
-        left 0.4s ease-out,
-        border 0.2s;
 }
 
-.inner-icon {
-    font-size: 0;
-    opacity: 0;
-    color: #d32f2f;
-    transition: opacity 0.3s, font-size 0.3s;
+.main-title {
+    color: white;
+    font-size: 8rem;
+    line-height: 1.1;
+    text-align: center;
+    text-transform: uppercase;
+    z-index: 100;
 }
 
-/* --- 2. 각 스크롤 섹션 기본 설정 --- */
-.scroll-section {
-    height: 100vh;
+/* 공통 오브젝트: 위치를 무조건 화면 정중앙에 고정 (Fixed) */
+/* 이렇게 하면 스크롤을 어디로 움직이든 절대 위치가 안 흔들립니다 */
+.sticky-ball, .stop-sign, .heart-shape {
+    position: fixed !important; /* 강제 고정 */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.sticky-ball {
+    width: 100px;
+    height: 100px;
+    background-color: #E60000;
+    border-radius: 50%;
+   z-index: 20 !important;
+}
+
+/* --- [2] 두 번째 장면 (STOP & CAR) --- */
+.scene-stop {
+    background-color: white;
+}
+
+.pole {
+    width: 10px;
+    height: 50vh;
+    background-color: black;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, 0);
+    z-index: 1;
+}
+
+.stop-sign {
+    width: 150px;
+    height: 150px;
+    z-index: 100 !important;
+    opacity: 0; /* JS로 제어 */
+}
+
+/* SVG 내부 색상 강제 통일 */
+.stop-sign .cls-4 { fill: #E60000 !important; }
+
+.car {
+    width: 40vw;
+    position: absolute;
+    bottom: 5%;
+    left: 5%;
+    z-index: 6;
+    fill: black;
+}
+
+/* --- [3] 세 번째 장면 (LOVE) --- */
+.scene-love {
+    background-color: white;
+    display: flex; 
+    flex-direction: row; 
+    justify-content: space-between; 
+    align-items: center;            
+    padding: 0 15%;
+}
+
+.person {
+    width: 200px;
+    height: auto;
+    z-index: 10;
+    display: block;
+}
+
+.person svg {
     width: 100%;
+    height: 100%;
+}
+
+.heart-shape {
+    width: 150px;
+    height: 150px;
+    fill: #E60000 !important;
+    opacity: 0;
+    z-index: 10;
+}
+
+/* --- [4] 네 번째 장면 (OK) : 위치 수정 버전 --- */
+
+.scene-ok {
+    width: 100%;
+    height: 100vh;
+    background-color: white;
+    position: relative; /* 자식 요소들의 기준점 */
+    overflow: hidden;
+}
+
+/* 1. 체크표시 (공 위로 띄우기) */
+.checkmark {
+    width: 100px;
+    height: 100px;
+    
+    position: absolute; /* 자유로운 위치 선정 */
+    top: 50%;
+    left: 50%;
+    
+    /* [핵심] 정중앙에서 위(-y축)로 110px 만큼 이동 */
+    /* 공 크기가 100px니까 그보다 조금 더 위로 */
+    transform: translate(-50%, -160px); 
+    
+    opacity: 0; 
+    z-index: 30; /* 공보다 위에 보이게 */
+}
+
+/* 체크표시 선 스타일 */
+.checkmark svg {
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: #E60000;
+    stroke-width: 10px; /* 선 굵기 */
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+
+/* 2. K 글자 (공 오른쪽으로 밀기) */
+.k-text {
+    /* 글자 크기랑 굵기 */
+    font-size: 9rem; 
+    font-weight: 900;
+    color: black;
+    line-height: 1;
+    
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    
+    /* [핵심] 정중앙에서 오른쪽(+x축)으로 65px 만큼 이동 */
+    /* 공 반지름(50px) + 간격(15px) = 65px */
+    transform: translate(65px, -52%); /* -52%는 시각적 높이 보정 */
+    
+    z-index: 10;
+}
+
+.scene-no {
+    width: 100%; height: 100vh; background-color: white;
+    position: relative; overflow: hidden;
+}
+
+.decline-icon {
+    width: 100px; height: 100px;
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%); /* 정확히 중앙 */
+    
+    /* [핵심] 빨간 공(z-index: 20)보다 높아야 흰색 아이콘이 보임 */
+    z-index: 100 !important; 
+    opacity: 0; /* 처음엔 숨김 (JS로 짠!) */
+}
+.decline-icon svg { width: 100%; height: 100%; }
+
+.n-text {
+    font-size: 9rem; font-weight: 900; color: black; line-height: 1;
+    position: absolute; top: 50%; left: 48%;
+    transform: translate(-130px, -52%); /* 왼쪽 배치 */
+    z-index: 10;
+}
+
+/* --- [6] 여섯 번째 장면 (수도꼭지) - 심플 버전 --- */
+
+.scene-drop {
+    width: 100%;
+    height: 100vh;
+    background-color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 1. 수도꼭지 몸통 */
+.faucet-body {
+    width: 800px;
+    
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    
+    /* [위치 수정 완료] */
+    /* x축: -42% -> -35% (오른쪽으로 이동) */
+    /* y축: -65% -> -50% (아래로 이동) */
+    /* 이제 화면 정중앙에 있는 공이 수도꼭지 몸통 가운데에 위치할 것입니다 */
+    transform: translate(-39%, -55%); 
+    
+    z-index: 10; /* 공(20)보다 뒤에 배치 */
+    pointer-events: none;
+}
+
+
+/* --- [7] IMPORTANT 장면 CSS (보내주신 코드 + 안전장치) --- */
+
+.important-section {
+    width: 100%;
+    height: 100vh;
+    background-color: white;
     display: flex;
     justify-content: center;
     align-items: center;
     position: relative;
-    box-sizing: border-box;
     overflow: hidden;
 
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
+
 }
 
-.icon-group {
+.dense-text-container {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4rem;
-}
-.column-group { flex-direction: column; gap: 2rem; }
-.row-group { flex-direction: row; }
-
-/* --- 1. Header --- */
-#main-header {
-    height: 100vh;
-    background-color: #d32f2f;
-    color: white;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-}
-.header-content h1 { font-size: 8vw; margin: 0; line-height: 1.1; font-weight: 900; }
-.header-content p { font-size: 1.5rem; letter-spacing: 5px; margin-top: 20px; }
-
-
-/* 이미지 두 장을 담는 wrapper */
-.stop-image-wrapper {
-    position: relative;
-    width: 80vw;
-    max-width: 800px;
-    min-height: 300px; /* wrapper 붕괴 방지 */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-/* 공통 속성: 트랜지션과 초기 위치 설정 */
-.stop-image {
-    width: 100%;
-    height: auto;
-    
-    /* 등장 효과: 왼쪽에서 슬라이드 */
-    transform: translateX(-150%);
-    /* transform(위치/크기)과 opacity(투명도) 트랜지션 분리 설정 */
-    transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), /* 텐션감 있는 베지어 곡선 */
-                opacity 0.4s ease-out;
-}
-
-/* 1. Default Image: 공간을 차지해야 하므로 relative 유지 */
-/* 중요: !important를 쓰거나 CSS 순서를 잘 지켜서 absolute가 되지 않도록 함 */
-.default-image {
-    position: relative; 
-    z-index: 1;
-    opacity: 1;
-}
-
-/* 2. Active Image: Default 위에 겹쳐야 하므로 absolute */
-.active-image {
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 2;
-    opacity: 0;
-    
-    /* 평소에는 기본 크기 */
-    transform-origin: center center;
-}
-
-/* 3. 섹션 등장 시: 슬라이드 인 (원래 위치로) */
-.stop-image-wrapper.active .stop-image {
-    transform: translateX(0);
-}
-
-/* 4. 도달(Reached) 시: Active 이미지 보이기 + "확대 효과(Pop)" */
-.stop-image-wrapper.is-reached .default-image {
-    opacity: 0;
-}
-
-.stop-image-wrapper.is-reached .active-image {
-    opacity: 1;
-    /* 여기서 translateX(0)을 유지하면서 scale을 추가해야 함 */
-    transform: translateX(0) scale(1.1); 
-}
-.important-section {
-    background-color: white;
     flex-direction: column;
-    text-align: center;
+    align-items: center;
+    gap: 0px; 
+}
+
+.dense-text-container p {
+    margin: 0;
+    font-size: 4rem; 
+    font-weight: 900;
+    color: black;
+    line-height: 1.1;
     white-space: nowrap;
-}
-.text-wall { display: flex; flex-direction: column; gap: 1rem; align-items: center; }
-.text-wall p { margin: 0; font-size: 3rem; font-weight: 900; color: #000; transition: opacity 0.5s ease; }
-.focus-word { display: inline-block; position: relative; z-index: 5; }
-.important-section.is-focused .fade-target { opacity: 0.1; }
-.important-section.is-focused .focus-word { opacity: 1; }
-
-/* HEART */
-.person-icon { font-size: 12rem; }
-.heart-wrapper { width: 140px; height: 140px; display: flex; justify-content: center; align-items: center; }
-
-/* OK */
-.check-icon { font-size: 8rem; color: #d32f2f; }
-.text-big { font-size: 12rem; font-weight: 900; display: flex; align-items: center; line-height: 1; }
-.ok-position { display: inline-block; width: 110px; height: 110px; border: 15px solid #000; border-radius: 50%; margin-right: 10px; }
-
-/* ON */
-.on-position { display: inline-block; width: 110px; height: 110px; background: #d32f2f; border-radius: 50%; margin-right: 20px; opacity: 0.3; }
-.toggle-icon { font-size: 8rem; margin-top: 20px; }
-
-/* TAP */
-.tap-group { position: relative; margin-top: -50px; }
-.tap-icon { font-size: 16rem; }
-.tap-position { position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; }
-.drop-icon { position: absolute; bottom: -80px; left: 50%; transform: translateX(-50%); font-size: 5rem; color: #000; }
-
-/* REC */
-.rec-box { border: 10px solid #000; border-radius: 20px; padding: 20px 60px; display: flex; align-items: center; font-size: 6rem; font-weight: 900; }
-.rec-position { display: inline-block; width: 50px; height: 50px; background: #d32f2f; border-radius: 50%; margin-right: 30px; opacity: 0.2; }
-
-/* CHAT */
-.chat-bubble { position: relative; font-size: 14rem; }
-.chat-badge-position { position: absolute; top: 10px; right: 10px; width: 50px; height: 50px; }
-
-/* PLAYER */
-.player-controls { display: flex; gap: 80px; font-size: 8rem; align-items: center; }
-.stop-btn-placeholder { width: 90px; height: 90px; background: #eee; border-radius: 5px; }
-
-/* EXCLAMATION */
-.exclamation-group { display: flex; flex-direction: column; align-items: center; gap: 20px; }
-.exclamation-bar { width: 50px; height: 200px; background: #d32f2f; }
-.exclamation-dot-position { width: 50px; height: 50px; background: #eee; border-radius: 50%; }
-
-/* END */
-.end-section { background-color: #d32f2f; height: 100vh; flex-direction: column; overflow: hidden; }
-.snowman-group { display: flex; flex-direction: column; align-items: center; z-index: 10; transform: scale(1.5); }
-.snowman-head-position { width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; margin-bottom: -8px; }
-.snowman-body { width: 100px; height: 100px; background: white; border-radius: 50%; }
-
-.snow-flakes-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-.snow-dot { position: absolute; top: -30px; width: 15px; height: 15px; background-color: white; border-radius: 50%; opacity: 0.8; animation: fall linear infinite; }
-@keyframes fall {
-    0% { transform: translateY(0); opacity: 0; }
-    10% { opacity: 0.9; }
-    100% { transform: translateY(110vh); opacity: 0; }
+    transition: opacity 0.3s ease; 
 }
 
-/* --- 도착 효과 (Dot) --- */
-.dot.is-important-text {
-    background-color: transparent !important;
-    border: 8px solid #d32f2f !important;
-    width: 320px !important; height: 100px !important;
+/* 주인공 문장 */
+.target-line {
+    position: relative;
+    z-index: 30 !important; /* HTML 인라인 스타일보다 확실하게 */
+}
+
+/* --- 변신 효과 --- */
+
+/* 1. 배경 흐리게 */
+.important-section.is-active .bg-line {
+    opacity: 0.1 !important; 
+}
+
+/* 2. 주인공 선명하게 */
+.important-section.is-active .target-line {
+    opacity: 1 !important;
+}
+
+/* 3. 빨간 공 -> 테두리 변신 */
+.sticky-ball.is-highlighting {
+    background-color: transparent !important; /* 면 투명 */
+    border: 15px solid #E60000 !important;   /* 선 생성 */
+    
+    width: 850px !important; 
+    height: 140px !important;
     border-radius: 100px !important;
-    transform: translate(-50%, -50%) scale(1.1) !important;
+    
+    transform: translate(-50%, -50%) !important;
+    
+    z-index: 20 !important; /* 글자(30) 뒤, 배경 앞 */
+    opacity: 1 !important;
+    
+    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-.dot.is-heart {
-    background-color: transparent !important;
-    transform: translate(-50%, -50%) scale(1.3) !important;
-}
-.dot.is-heart .inner-icon { opacity: 1; font-size: 10rem; }
-
-.dot.is-square {
-    border-radius: 10px !important;
-    width: 90px !important; height: 90px !important;
-    transform: translate(-50%, -50%) scale(1.2) !important;
-}
-
-.dot.is-white {
-    background-color: white !important;
-    width: 60px !important; height: 60px !important;
-    transform: translate(-50%, -50%) scale(1.2) !important;
+/* --- [8] 마지막 장면: REC --- */
+.scene-rec {
+    width: 100%;
+    height: 100vh;
+    background-color: white;
+    
+    /* 중앙 정렬 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    position: relative;
+    overflow: hidden;
 }
 
-.dot.is-ok {
-    width: 110px !important; height: 110px !important;
-    transform: translate(-50%, -50%) scale(1.1) !important;
+.rec-text {
+    font-size: 8rem; /* 글자 크기 */
+    font-weight: 900;
+    color: black;
+    
+    /* [핵심] 공이 정중앙에 있으므로, 글자를 오른쪽으로 밈 */
+    /* 공 지름(100px)/2 + 여백 = 약 70~80px 이동 */
+    margin-left: 350px; 
 }
 
-.dot.is-rec {
-    width: 50px !important; height: 50px !important;
-    animation: blink 0.8s infinite;
-    transform: translate(-50%, -50%) scale(1.3) !important;
-}
-@keyframes blink { 50% { opacity: 0; } }
-
-.dot.is-badge {
-    width: 50px !important; height: 50px !important;
-    border: 5px solid white;
-    transform: translate(-50%, -50%) scale(1.4) !important;
+/* 깜빡이는 애니메이션 정의 */
+@keyframes blink-effect {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
 }
 
-.dot.is-tap {
-    width: 40px !important; height: 40px !important;
-    transform: translate(-50%, -50%) scale(1.2) !important;
+/* [JS가 붙일 클래스] 녹화 모드 */
+.sticky-ball.is-recording {
+    /* 1. [7]번 장면의 테두리/알약 스타일 초기화 (강제 적용) */
+    background-color: #E60000 !important; /* 속 채우기 */
+    border: none !important;              /* 테두리 없애기 */
+    border-radius: 50% !important;        /* 다시 원형으로 */
+    width: 100px !important;              /* 원래 크기 */
+    height: 100px !important;
+    transform: translate(-50%, -50%) !important; /* 중앙 고정 */
+    
+    /* 2. 깜빡임 효과 적용 (1초마다 무한 반복) */
+    animation: blink-effect 1s infinite;
+    
+    z-index: 100 !important; /* 제일 위에 */
+
 }
 
-.dot.is-exclamation {
-    width: 50px !important; height: 50px !important;
-    transform: translate(-50%, -50%) scale(1.2) !important;
+/* --- [9] 배터리 부족 (최종_매직스왑.css) --- */
+.scene-battery {
+    width: 100%; height: 100vh; background-color: white;
+    display: flex; justify-content: center; align-items: center;
+    position: relative;
+}
+.battery-layout { display: flex; align-items: center; gap: 30px; }
+.percent-text { font-size: 8rem; font-weight: 900; color: black; line-height: 1; }
+.battery-container { display: flex; align-items: center; position: relative; }
+
+/* 배터리 껍데기 */
+.battery-shell {
+    width: 200px; height: 100px;
+    border: 12px solid black; 
+    border-radius: 15px;
+    background: transparent;
+    
+    /* 내부의 빨간 네모 위치 잡기용 */
+    display: flex;
+    align-items: center; /* 세로 중앙 */
+    justify-content: flex-start; /* 왼쪽 정렬 */
+    padding: 5px; /* 테두리와 간격 */
+    
+    z-index: 10;
+}
+
+.battery-tip {
+    width: 15px; height: 50px;
+    background-color: black;
+    border-radius: 0 10px 10px 0;
+    margin-left: 8px;
+}
+
+/* [★핵심] 미리 넣어둔 빨간 네모 (처음엔 숨김) */
+.battery-fill {
+    width: 60px; /* 잔량 너비 */
+    height: 100%; /* 껍데기 높이에 맞춤 */
+    background-color: #E60000;
+    border-radius: 3px; /* 살짝 둥근 네모 */
+    
+    opacity: 0; /* 평소엔 안 보임! */
+    transition: opacity 0.1s ease; /* 켜질 때 부드럽게 */
+}
+
+/* [★핵심] 진짜 공을 숨기는 클래스 */
+.sticky-ball.force-hide {
+    opacity: 0 !important;
+    transition: opacity 0.1s ease;
+}
+
+/* --- [10] 마지막 장면: NEXT (최종 수정) --- */
+.scene-next {
+    width: 100%;
+    height: 100vh;
+    background-color: #E60000; /* 강렬한 빨강 배경 */
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    position: relative;
+    z-index: 100; 
+}
+
+/* 링크 감싸는 상자 (여기에 호버 효과 적용) */
+.next-link-wrapper {
+    text-decoration: none; /* 링크 밑줄 제거 */
+    cursor: pointer;       /* 마우스 올리면 손가락 모양 */
+    
+    /* 변신 속도 (부드럽게) */
+    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    
+    /* 클릭 영역 확보를 위해 블록 처리 */
+    display: inline-block; 
+}
+
+/* [★핵심] 마우스를 올렸을 때 (Hover) */
+.next-link-wrapper:hover {
+    transform: scale(1.15); /* 1.15배 커짐 */
+}
+
+/* 내부 콘텐츠 정렬 */
+.next-content {
+    display: flex;
+    align-items: center;
+    gap: 40px; 
+}
+
+.next-text {
+    font-size: 10rem; 
+    font-weight: 900;
+    color: white; /* 흰색 글씨 */
+    line-height: 1;
+}
+
+.arrow-icon {
+    width: 120px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+}
+
+.arrow-icon svg {
+    width: 100%;
+    height: 100%;
+    /* stroke 색상은 HTML path에서 설정됨 (white) */
 }
