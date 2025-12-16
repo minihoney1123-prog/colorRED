@@ -1,170 +1,259 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const scrollDot = document.getElementById('scroll-dot');
-    const dotTargets = document.querySelectorAll('.dot-target');
-    const importantSection = document.getElementById('section-important');
-    const stopWrapper = document.querySelector('.stop-image-wrapper');
+gsap.registerPlugin(ScrollTrigger);
 
-    let targetPositions = [];
+// 전체 애니메이션 타임라인
+const tl = gsap.timeline({
+    scrollTrigger: {
+        trigger: "body",
+        start: "top top",
+        end: "bottom bottom",
+        scrub: 1
+    }
+});
 
-    // 1. 타겟 위치 계산 (화면 리사이즈 시 재계산)
-    const updateLayout = () => {
-        targetPositions = [];
-        // 문서 전체에서의 스크롤 위치
-        const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+/* --- [Scene 1 -> Scene 2] : 공 -> STOP 표지판 --- */
+tl.to(".stop-sign", {
+    scrollTrigger: {
+        trigger: ".scene-stop",
+        start: "top center",
+        end: "center center",
+        scrub: true
+    },
+    opacity: 1 // STOP 표지판 나타남 (공 위에 덮어씌움)
+});
 
-        dotTargets.forEach(target => {
-            const rect = target.getBoundingClientRect();
-            // 타겟의 절대 좌표 계산
-            const absoluteY = rect.top + scrollY + rect.height / 2;
-            const absoluteX = rect.left + window.scrollX + rect.width / 2;
+// 자동차 등장
+gsap.from(".car", {
+    scrollTrigger: {
+        trigger: ".scene-stop",
+        start: "top bottom",
+        end: "center center",
+        scrub: 1
+    },
+    xPercent: -150 
+});
 
-            targetPositions.push({
-                id: target.dataset.targetId,
-                x: absoluteX,
-                y: absoluteY,
-                element: target 
-            });
-        });
+
+/* --- [Scene 2 -> Scene 3] : STOP -> 하트 --- */
+
+// 1. STOP 표지판 사라짐 (뒤에 있던 공이 다시 보임)
+tl.to(".stop-sign", {
+    scrollTrigger: {
+        trigger: ".scene-love",
+        start: "top bottom",
+        end: "top center",
+        scrub: true
+    },
+    opacity: 0
+})
+
+// 2. 공 -> 하트 변신
+.to(".sticky-ball", {
+    scrollTrigger: {
+        trigger: ".scene-love",
+        start: "center 60%", 
+        end: "center center",
+        scrub: true
+    },
+    opacity: 0, // 공 사라짐
+    scale: 0.5
+})
+.to(".heart-shape", {
+    scrollTrigger: {
+        trigger: ".scene-love",
+        start: "center 60%", 
+        end: "center center",
+        scrub: true
+    },
+    opacity: 1, // 하트 나타남
+    scale: 1.2,
+    rotation: 360,
+    from: { rotation: 0 }
+});
+
+
+/* --- [Scene 3 -> Scene 4] : 하트 -> 다시 공 (OK 준비) --- */
+/* ★ 여기가 문제였던 부분입니다! 확실하게 추가했습니다 ★ */
+
+// 1. 하트 사라짐
+tl.to(".heart-shape", {
+    scrollTrigger: {
+        trigger: ".scene-ok", // OK 페이지가 올라올 때
+        start: "top bottom",
+        end: "top center",
+        scrub: true
+    },
+    opacity: 0,     // 하트 투명해짐
+    scale: 0.5,     // 작아짐
+    rotation: -360  // 반대로 돔
+}, "reset-ball")    // "reset-ball"이라는 이름으로 묶어서 동시에 실행
+
+// 2. 공 다시 나타남 (투명도 0 -> 1)
+.to(".sticky-ball", {
+    scrollTrigger: {
+        trigger: ".scene-ok",
+        start: "top bottom",
+        end: "top center",
+        scrub: true
+    },
+    opacity: 1, // 공 다시 보임!
+    scale: 1    // 원래 크기로 복구
+}, "reset-ball");
+
+
+/* --- [Scene 4] : OK 완성 --- */
+// 공이 'O' 자리에 도착했을 때 (화면 정중앙)
+
+// 1. K 글자 색상 변경 (검정 -> 빨강)
+tl.to(".k-text", {
+    scrollTrigger: {
+        trigger: ".scene-ok",
+        start: "center center",
+        end: "center center",
+        scrub: true,
+        toggleActions: "play none none reverse"
+    },
+    color: "#E60000"
+}, "ok-finish")
+
+// 2. 체크표시 나타남
+.to(".checkmark", {
+    scrollTrigger: {
+        trigger: ".scene-ok",
+        start: "center center",
+        end: "center center",
+        scrub: true,
+        toggleActions: "play none none reverse"
+    },
+    opacity: 1,
+    scale: 1,
+    ease: "back.out(1.7)",
+    from: { scale: 0.5 }
+}, "ok-finish");
+
+
+/* script.js 수정 (마지막 부분 교체) */
+
+// --- [Scene 5: NO 복구] ---
+tl.to(".n-text", {
+    scrollTrigger: {
+        trigger: ".scene-no",
+        start: "center center",
+        end: "center center",
+        toggleActions: "play none none reverse"
+    },
+    color: "#E60000" // N 빨갛게
+}, "no-scene");
+
+tl.to(".decline-icon", {
+    scrollTrigger: {
+        trigger: ".scene-no",
+        start: "center center",
+        end: "center center",
+        toggleActions: "play none none reverse"
+    },
+    opacity: 1, // 아이콘 짠!
+    scale: 1.2,
+    ease: "back.out(1.7)",
+    from: { scale: 0.5 }
+}, "no-scene");
+
+
+// --- [Scene 6 정리: 수도꼭지 치우기] ---
+tl.to(".faucet-body", {
+    scrollTrigger: {
+        trigger: ".important-section",
+        start: "top bottom",
+        end: "top center",
+        scrub: true
+    },
+    y: -1000,
+    opacity: 0
+});
+
+// --- [Scene 7] JS 코드 (보내주신 것과 동일) ---
+
+// 타임라인과 완전히 분리
+ScrollTrigger.create({
+    trigger: ".important-section",
+    start: "top center",
+    end: "bottom center",
+
+    onEnter: () => {
+        console.log("변신 시작!");
+        document.querySelector(".important-section")
+          .classList.add("is-active");
+        document.querySelector(".sticky-ball")
+          .classList.add("is-highlighting");
+    },
+
+    onLeaveBack: () => {
+        document.querySelector(".important-section")
+          .classList.remove("is-active");
+        document.querySelector(".sticky-ball")
+          .classList.remove("is-highlighting");
+    }
+});
+
+
+// --- [Scene 8: REC 깜빡임] ---
+
+ScrollTrigger.create({
+    trigger: ".scene-rec",
+    start: "center center", // 화면 중앙에 오면
+    end: "bottom bottom",
+    
+    // 들어오면: 녹화 모드 ON
+    onEnter: () => {
+        // 혹시 7번 장면 스타일이 남아있다면 강제 제거
+        document.querySelector(".important-section").classList.remove("is-active");
+        document.querySelector(".sticky-ball").classList.remove("is-highlighting");
         
-        // Y좌표 순으로 정렬
-        targetPositions.sort((a, b) => a.y - b.y);
-    };
-
-    // 2. 동그라미 스타일 업데이트 함수
-    const updateDotStyle = (id) => {
-        scrollDot.className = ''; 
-        scrollDot.id = 'scroll-dot'; 
-        scrollDot.style.border = ''; 
-
-        switch (id) {
-            case 'important-text': 
-                scrollDot.classList.add('dot', 'is-important-text');
-                break;
-            case 'heart':
-                scrollDot.classList.add('dot', 'is-heart');
-                break;
-            case 'ok':
-                scrollDot.classList.add('dot', 'is-ok');
-                break;
-            case 'tap':
-                scrollDot.classList.add('dot', 'is-tap');
-                break;
-            case 'rec':
-                scrollDot.classList.add('dot', 'is-rec');
-                break;
-            case 'chat':
-                scrollDot.classList.add('dot', 'is-badge');
-                break;
-            case 'player':
-                scrollDot.classList.add('dot', 'is-square');
-                break;
-            case 'snowman':
-                scrollDot.classList.add('dot', 'is-white');
-                break;
-            case 'exclamation':
-                scrollDot.classList.add('dot', 'is-exclamation');
-                break;
-            default: 
-                scrollDot.classList.add('dot');
-                break;
-        }
-    };
-
-    // 3. 메인 스크롤 핸들러
-    const handleScroll = () => {
-        const scrollY = window.scrollY;
-        const viewportHeight = window.innerHeight;
-        // 현재 화면의 정중앙 좌표
-        const viewportCenterY = scrollY + (viewportHeight / 2);
-
-        // [자동차 등장 애니메이션] 화면 하단에 걸치면 등장
-        if (stopWrapper) {
-            const wrapperTop = stopWrapper.closest('section').offsetTop;
-            if (scrollY + viewportHeight > wrapperTop + 200) {
-                stopWrapper.classList.add('active');
-            }
-        }
+        // 깜빡임 클래스 추가
+        document.querySelector(".sticky-ball").classList.add("is-recording");
+    },
+    
+    // 뒤로 나가면: 녹화 모드 OFF
+    onLeaveBack: () => {
+        document.querySelector(".sticky-ball").classList.remove("is-recording");
         
-        // [메인 화면 숨김 처리]
-        // 타겟이 없거나, 첫 번째 타겟(자동차)보다 훨씬 위에 있으면 숨김
-        if (targetPositions.length === 0 || viewportCenterY < targetPositions[0].y - viewportHeight * 0.4) {
-            scrollDot.style.opacity = '0';
-            return; 
-        } else {
-            scrollDot.style.opacity = '1';
-        }
+        // (선택사항) 위로 올라갈 때 7번 장면 효과를 다시 살리고 싶다면 아래 주석 해제
+        // document.querySelector(".important-section").classList.add("is-active");
+        // document.querySelector(".sticky-ball").classList.add("is-highlighting");
+    }
+});
 
-        // [현재 활성 타겟 찾기] 화면 중앙과 가장 가까운 타겟을 찾음
-        let closestTarget = null;
-        let minDiff = Infinity;
+// --- [Scene 9: 배터리 매직 스왑 (깜빡임 제거 추가)] ---
 
-        targetPositions.forEach(pos => {
-            const diff = Math.abs(viewportCenterY - pos.y);
-            if (diff < minDiff) {
-                minDiff = diff;
-                closestTarget = pos;
-            }
-        });
-
-        // [부드러운 이동 계산] 현재 구간 찾기
-        let currentIdx = 0;
-        for (let i = 0; i < targetPositions.length - 1; i++) {
-            if (viewportCenterY >= targetPositions[i].y) {
-                currentIdx = i;
-            }
-        }
+ScrollTrigger.create({
+    trigger: ".scene-battery",
+    start: "center center",
+    end: "bottom center",
+    
+    // [들어오면]
+    onEnter: () => {
+        const ball = document.querySelector(".sticky-ball");
         
-        const currentTarget = targetPositions[currentIdx];
-        const nextTarget = targetPositions[currentIdx + 1];
-
-        let finalX = currentTarget.x;
-        let finalY = currentTarget.y;
-
-        if (nextTarget) {
-            const distTotal = nextTarget.y - currentTarget.y;
-            const distCovered = viewportCenterY - currentTarget.y;
-            let progress = distCovered / distTotal;
-            
-            // 범위 제한
-            progress = Math.max(0, Math.min(1, progress));
-
-            finalX = currentTarget.x + (nextTarget.x - currentTarget.x) * progress;
-            finalY = currentTarget.y + (nextTarget.y - currentTarget.y) * progress;
-        }
-
-        // 동그라미 위치 적용
-        scrollDot.style.left = `${finalX - window.scrollX}px`;
-        scrollDot.style.top = `${finalY - window.scrollY}px`;
-
-        // [스타일 및 이벤트 적용] 가장 가까운 타겟 기준
-        if (closestTarget) {
-            updateDotStyle(closestTarget.id);
-
-            // Important 텍스트 강조 효과
-            if (closestTarget.id === 'important-text') {
-                importantSection.classList.add('is-focused');
-            } else {
-                importantSection.classList.remove('is-focused');
-            }
-
-            // STOP 이미지 교체 효과
-            if (closestTarget.id === 'stop') {
-                // 동그라미가 중앙 근처에 왔을 때 (오차 100px)
-                if (minDiff < 100 && stopWrapper) {
-                     stopWrapper.classList.add('is-reached');
-                }
-            } else {
-                if (stopWrapper) stopWrapper.classList.remove('is-reached');
-            }
-        }
-    };
-
-    // 이벤트 리스너 등록
-    window.addEventListener('scroll', handleScroll);
-    window.addEventListener('resize', () => { updateLayout(); handleScroll(); });
-    window.addEventListener('load', () => { updateLayout(); handleScroll(); });
-
-    // 초기 실행
-    updateLayout();
-    handleScroll();
+        // 1. [핵심!] 깜빡임 애니메이션 강제 정지
+        ball.style.animation = "none"; 
+        
+        // 2. 진짜 공 숨기기
+        ball.classList.add("force-hide");
+        
+        // 3. 배터리 안의 네모 보여주기
+        document.querySelector(".battery-fill").style.opacity = "1";
+    },
+    
+    // [나가면]
+    onLeaveBack: () => {
+        const ball = document.querySelector(".sticky-ball");
+        
+        // 1. 애니메이션 스타일 초기화 (다시 위로 갔을 때를 위해)
+        ball.style.animation = ""; 
+        
+        // 2. 진짜 공 다시 보이기
+        ball.classList.remove("force-hide");
+        
+        // 3. 배터리 네모 숨기기
+        document.querySelector(".battery-fill").style.opacity = "0";
+    }
 });
